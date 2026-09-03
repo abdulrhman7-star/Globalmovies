@@ -1,20 +1,30 @@
 import * as cheerio from 'cheerio';
 
 const PRIMARY_BASE_URL = 'https://ak.sv';
-const FALLBACK_DOMAINS = ['ak.sv', 'akwam.cx', 'akwam.ss', 'akwam.to'];
+
+const FALLBACK_DOMAINS = [
+  'akwam.cx',
+  'akwam.ss',
+  'akwam.to',
+];
 
 const REQUEST_HEADERS: Record<string, string> = {
   'User-Agent':
-    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 ' +
-    '(KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36',
-  'Accept':
-    'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) ' +
+    'AppleWebKit/537.36 (KHTML, like Gecko) ' +
+    'Chrome/128.0.0.0 Safari/537.36',
+
+  Accept:
+    'text/html,application/xhtml+xml,application/xml;q=0.9,' +
+    'image/avif,image/webp,image/apng,*/*;q=0.8',
+
   'Accept-Language': 'ar,en-US;q=0.9,en;q=0.8',
-  'Referer': `${PRIMARY_BASE_URL}/`,
+
+  Referer: `${PRIMARY_BASE_URL}/`,
 };
 
-const PAGE_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
-const LINK_CACHE_TTL = 90 * 1000;     // 90 seconds for fresh tokens
+const PAGE_CACHE_TTL = 5 * 60 * 1000;
+const LINK_CACHE_TTL = 90 * 1000;
 
 interface CacheEntry<T> {
   value: T;
@@ -62,13 +72,25 @@ export interface MediaDetails {
   subtitles?: SubtitleTrack[];
 }
 
-function cacheGet<T>(cache: Map<string, CacheEntry<T>>, key: string): T | null {
+/* =========================================================
+   CACHE
+========================================================= */
+
+function cacheGet<T>(
+  cache: Map<string, CacheEntry<T>>,
+  key: string
+): T | null {
   const item = cache.get(key);
-  if (!item) return null;
+
+  if (!item) {
+    return null;
+  }
+
   if (Date.now() > item.expires) {
     cache.delete(key);
     return null;
   }
+
   return item.value;
 }
 
@@ -80,19 +102,26 @@ function cacheSet<T>(
 ) {
   if (cache.size > 300) {
     const first = cache.keys().next().value;
+
     if (first) {
       cache.delete(first);
     }
   }
+
   cache.set(key, {
     value,
     expires: Date.now() + ttl,
   });
 }
 
+/* =========================================================
+   URL HELPERS
+========================================================= */
+
 export function isAkwamUrl(url: string): boolean {
   try {
     const hostname = new URL(url).hostname.toLowerCase();
+
     return (
       hostname === 'ak.sv' ||
       hostname.endsWith('.ak.sv') ||
@@ -110,13 +139,18 @@ export function isAkwamUrl(url: string): boolean {
 }
 
 export function normalizeUrl(value: string): string {
-  let url = value.trim();
-  if (!url) return '';
+  let url = String(value || '').trim();
 
+  if (!url) {
+    return '';
+  }
+
+  // //example.com/file
   if (url.startsWith('//')) {
     return `https:${url}`;
   }
 
+  // /movie/123
   if (url.startsWith('/')) {
     return `${PRIMARY_BASE_URL}${url}`;
   }
@@ -128,16 +162,31 @@ export function normalizeUrl(value: string): string {
   }
 }
 
-async function fetchHtml(url: string, timeoutMs = 25000): Promise<string> {
+/* =========================================================
+   FETCH HTML
+========================================================= */
+
+async function fetchHtml(
+  url: string,
+  timeoutMs = 25000
+): Promise<string> {
   const target = normalizeUrl(url);
 
+  if (!target) {
+    throw new Error('الرابط غير صالح');
+  }
+
   const cached = cacheGet(pageCache, target);
+
   if (cached) {
     return cached;
   }
 
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+  const timeout = setTimeout(() => {
+    controller.abort();
+  }, timeoutMs);
 
   try {
     const response = await fetch(target, {
@@ -149,211 +198,665 @@ async function fetchHtml(url: string, timeoutMs = 25000): Promise<string> {
     });
 
     if (!response.ok) {
-      throw new Error(`Akwam HTTP ${response.status}: ${response.statusText}`);
+      throw new Error(
+        `Akwam HTTP ${response.status}: ${response.statusText}`
+      );
     }
 
     const html = await response.text();
-    cacheSet(pageCache, target, html, PAGE_CACHE_TTL);
+
+    if (!html || html.length < 100) {
+      throw new Error('الصفحة التي تم جلبها فارغة أو غير مكتملة');
+    }
+
+    cacheSet(
+      pageCache,
+      target,
+      html,
+      PAGE_CACHE_TTL
+    );
+
     return html;
   } catch (error: any) {
-    // If primary failed and was ak.sv, attempt fallback domain
+    /*
+     * تجربة النطاقات الاحتياطية فقط إذا كان الطلب الأصلي
+     * على ak.sv وفشل.
+     */
     if (target.includes('ak.sv')) {
-      for (const fallback of FALLBACK_DOMAINS.filter((d) => d !== 'ak.sv')) {
+      for (const fallback of FALLBACK_DOMAINS) {
         try {
-          const fallbackTarget = target.replace('ak.sv', fallback);
-          const fbResponse = await fetch(fallbackTarget, {
-            method: 'GET',
-            headers: {
-              ...REQUEST_HEADERS,
-              Referer: `https://${fallback}/`,
-            },
-            redirect: 'follow',
-            cache: 'no-store',
-            signal: controller.signal,
-          });
-          if (fbResponse.ok) {
-            const html = await fbResponse.text();
-            cacheSet(pageCache, target, html, PAGE_CACHE_TTL);
-            return html;
+          const fallbackTarget = target.replace(
+            'ak.sv',
+            fallback
+          );
+
+          const fallbackResponse = await fetch(
+            fallbackTarget,
+            {
+              method: 'GET',
+
+              headers: {
+                ...REQUEST_HEADERS,
+                Referer: `https://${fallback}/`,
+              },
+
+              redirect: 'follow',
+              cache: 'no-store',
+              signal: controller.signal,
+            }
+          );
+
+          if (!fallbackResponse.ok) {
+            continue;
           }
+
+          const fallbackHtml =
+            await fallbackResponse.text();
+
+          if (!fallbackHtml || fallbackHtml.length < 100) {
+            continue;
+          }
+
+          /*
+           * نخزن النتيجة باستخدام target الأصلي حتى تستفيد
+           * بقية الطلبات من cache.
+           */
+          cacheSet(
+            pageCache,
+            target,
+            fallbackHtml,
+            PAGE_CACHE_TTL
+          );
+
+          return fallbackHtml;
         } catch {
-          // continue fallback loop
+          // تجربة النطاق التالي
         }
       }
     }
-    throw new Error(`فشل في جلب الصفحة من الخادم: ${error?.message || 'تعذر الاتصال'}`);
+
+    const message =
+      error?.name === 'AbortError'
+        ? 'انتهت مهلة الاتصال بالمصدر'
+        : error?.message || 'تعذر الاتصال بالمصدر';
+
+    throw new Error(
+      `فشل في جلب الصفحة: ${message}`
+    );
   } finally {
     clearTimeout(timeout);
   }
 }
 
-function extractImage($: cheerio.CheerioAPI, element: any): string {
-  const img = $(element).find('img').first();
+/* =========================================================
+   GENERAL HTML HELPERS
+========================================================= */
+
+function extractImage(
+  $: cheerio.CheerioAPI,
+  element: any
+): string {
+  const img = $(element)
+    .find('img')
+    .first();
+
   const value =
     img.attr('data-src') ||
     img.attr('data-original') ||
     img.attr('data-lazy-src') ||
+    img.attr('data-lazy') ||
     img.attr('src') ||
     '';
 
   return normalizeUrl(value);
 }
 
-function detectType(url: string): MediaItem['type'] {
+function detectType(
+  url: string
+): MediaItem['type'] {
   const value = url.toLowerCase();
-  if (value.includes('/episode/')) return 'episode';
-  if (value.includes('/series/') || value.includes('/show/')) return 'series';
+
+  if (value.includes('/episode/')) {
+    return 'episode';
+  }
+
+  if (
+    value.includes('/series/') ||
+    value.includes('/show/')
+  ) {
+    return 'series';
+  }
+
+  if (value.includes('/movie/')) {
+    return 'movie';
+  }
+
   return 'movie';
 }
 
-function parseMediaCards(html: string): MediaItem[] {
+function cleanText(value: string): string {
+  return String(value || '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function extractYear(text: string): string | undefined {
+  const match = text.match(
+    /\b(19|20)\d{2}\b/
+  );
+
+  return match
+    ? match[0]
+    : undefined;
+}
+
+function extractQuality(
+  text: string
+): string | undefined {
+  const match = text.match(
+    /\b(4K|2160p|1080p|720p|480p|360p|WEB-DL|WEBRip|BluRay|HDRip|HDTV|CAM)\b/i
+  );
+
+  return match
+    ? match[1]
+    : undefined;
+}
+
+function extractRating(
+  text: string
+): string | undefined {
+  const match = text.match(
+    /\b(10(?:\.\d+)?|[0-9](?:\.\d+)?)\b/
+  );
+
+  return match
+    ? match[1]
+    : undefined;
+}
+
+/* =========================================================
+   MEDIA CARD PARSER
+========================================================= */
+
+function parseMediaCards(
+  html: string
+): MediaItem[] {
   const $ = cheerio.load(html);
+
   const results: MediaItem[] = [];
   const seen = new Set<string>();
 
-  const selectors = [
-    'div.entry-box',
-    'div.col-lg-auto',
-    'div.col-md-4',
-    'div.col-sm-6',
-    'div.col-6',
-    '.widget-body .row > div',
-    'article',
-  ];
+  /*
+   * لا نعتمد على class واحد لأن تصميم المصدر
+   * قد يتغير.
+   *
+   * نبحث أولًا عن روابط المحتوى.
+   */
+  $('a[href]').each((_, element) => {
+    const anchor = $(element);
 
-  $(selectors.join(',')).each((_, element) => {
-    const el = $(element);
-    const link = el
-      .find(
-        'a[href*="/movie/"],' +
-          'a[href*="/series/"],' +
-          'a[href*="/episode/"],' +
-          'a[href*="/show/"]'
+    let href =
+      anchor.attr('href') || '';
+
+    if (!href) {
+      return;
+    }
+
+    href = normalizeUrl(href);
+
+    if (!href) {
+      return;
+    }
+
+    const type = detectType(href);
+
+    /*
+     * نريد الأفلام والمسلسلات فقط هنا.
+     */
+    if (
+      type !== 'movie' &&
+      type !== 'series'
+    ) {
+      return;
+    }
+
+    /*
+     * منع التكرار.
+     */
+    if (seen.has(href)) {
+      return;
+    }
+
+    /*
+     * العثور على العنصر الأب الذي يمثل البطاقة.
+     */
+    let container = anchor;
+
+    for (let i = 0; i < 7; i++) {
+      const parent = container.parent();
+
+      if (!parent || !parent.length) {
+        break;
+      }
+
+      container = parent;
+
+      const hasImage =
+        container.find('img').length > 0;
+
+      const hasTitle =
+        container.find(
+          'h1,h2,h3,h4,h5,h6,.title,.name,.entry-title'
+        ).length > 0;
+
+      if (
+        hasImage ||
+        hasTitle
+      ) {
+        break;
+      }
+    }
+
+    /*
+     * النص الكامل للبطاقة.
+     */
+    const cardText = cleanText(
+      container.text()
+    );
+
+    /*
+     * استخراج العنوان.
+     */
+    let title =
+      anchor.attr('title') ||
+      anchor.attr('aria-label') ||
+      '';
+
+    if (!title) {
+      title = cleanText(
+        anchor
+          .find(
+            'h1,h2,h3,h4,h5,h6,.title,.name,.entry-title'
+          )
+          .first()
+          .text()
+      );
+    }
+
+    if (!title) {
+      title = cleanText(
+        container
+          .find(
+            'h1,h2,h3,h4,h5,h6,.title,.name,.entry-title'
+          )
+          .first()
+          .text()
+      );
+    }
+
+    /*
+     * إذا لم يوجد عنوان في heading،
+     * نستخدم نص الرابط.
+     */
+    if (!title) {
+      title = cleanText(
+        anchor.text()
+      );
+    }
+
+    /*
+     * تجاهل روابط الأزرار.
+     */
+    const invalidTitles = [
+      'مشاهدة',
+      'تحميل',
+      'شاهد',
+      'شاهد الآن',
+      'تحميل الآن',
+      'play',
+      'watch',
+      'download',
+    ];
+
+    if (
+      invalidTitles.includes(
+        title.toLowerCase()
       )
-      .first();
+    ) {
+      return;
+    }
 
-    let url = link.attr('href') || el.find('a').attr('href') || '';
-    const title =
-      link.text().replace(/\s+/g, ' ').trim() ||
-      el
-        .find('h3.entry-title, .entry-title, h3, h4')
+    /*
+     * عنوان قصير جدًا غالبًا ليس عنوان فيلم.
+     */
+    if (title.length < 2) {
+      return;
+    }
+
+    /*
+     * الصورة.
+     */
+    const image =
+      extractImage(
+        $,
+        container
+      );
+
+    /*
+     * التقييم.
+     */
+    let rating = cleanText(
+      container
+        .find(
+          '.rating,[class*="rating"]'
+        )
         .first()
         .text()
-        .replace(/\s+/g, ' ')
-        .trim();
+    );
 
-    if (!url || !title || url.startsWith('#') || url.startsWith('javascript:')) {
-      return;
+    rating =
+      rating.replace(
+        /[^0-9.]/g,
+        ''
+      );
+
+    if (!rating) {
+      rating =
+        extractRating(
+          cardText
+        ) || '';
     }
 
-    url = normalizeUrl(url);
+    /*
+     * الجودة.
+     */
+    let quality =
+      cleanText(
+        container
+          .find(
+            '.quality,[class*="quality"],.badge'
+          )
+          .first()
+          .text()
+      );
 
-    if (seen.has(url)) {
-      return;
+    if (!quality) {
+      quality =
+        extractQuality(
+          cardText
+        ) || '';
     }
-    seen.add(url);
 
-    const rating = el
-      .find('.rating, [class*="rating"]')
-      .first()
-      .text()
-      .replace(/[^0-9.]/g, '')
-      .trim();
+    /*
+     * السنة.
+     */
+    let year =
+      cleanText(
+        container
+          .find(
+            '.year,[class*="year"],.badge-secondary'
+          )
+          .first()
+          .text()
+      );
 
-    const quality = el
-      .find('.quality, [class*="quality"], .badge')
-      .first()
-      .text()
-      .replace(/\s+/g, ' ')
-      .trim();
+    if (!year) {
+      year =
+        extractYear(
+          cardText
+        ) || '';
+    }
 
-    const year = el
-      .find('.year, [class*="year"], .badge-secondary')
-      .first()
-      .text()
-      .replace(/\s+/g, ' ')
-      .trim();
+    seen.add(href);
 
     results.push({
       title,
-      url,
-      image: extractImage($, element),
-      rating: rating || undefined,
-      quality: quality || undefined,
-      year: year || undefined,
-      type: detectType(url),
+      url: href,
+      image,
+      rating:
+        rating || undefined,
+      quality:
+        quality || undefined,
+      year:
+        year || undefined,
+      type,
     });
   });
 
   return results;
 }
 
-export async function search(keyword: string, page = 1): Promise<MediaItem[]> {
-  const query = keyword.trim();
-  if (!query) return [];
+/* =========================================================
+   MOVIES
+========================================================= */
 
-  const url = `${PRIMARY_BASE_URL}/search?q=${encodeURIComponent(query)}&page=${Math.max(1, page)}`;
-  const html = await fetchHtml(url);
-  return parseMediaCards(html);
+export async function getMovies(
+  page = 1
+): Promise<MediaItem[]> {
+  const currentPage =
+    Math.max(
+      1,
+      Number.isFinite(page)
+        ? page
+        : 1
+    );
+
+  const url =
+    `${PRIMARY_BASE_URL}/movies` +
+    `?category=0` +
+    `&formats=0` +
+    `&language=0` +
+    `&quality=0` +
+    `&rating=0` +
+    `&section=0` +
+    `&year=0` +
+    `&page=${currentPage}`;
+
+  const html =
+    await fetchHtml(url);
+
+  return parseMediaCards(
+    html
+  );
 }
 
-export async function getMovies(page = 1): Promise<MediaItem[]> {
-  const html = await fetchHtml(`${PRIMARY_BASE_URL}/movies?page=${Math.max(1, page)}`);
-  return parseMediaCards(html);
+/* =========================================================
+   SERIES
+========================================================= */
+
+export async function getSeries(
+  page = 1
+): Promise<MediaItem[]> {
+  const currentPage =
+    Math.max(
+      1,
+      Number.isFinite(page)
+        ? page
+        : 1
+    );
+
+  const url =
+    `${PRIMARY_BASE_URL}/series` +
+    `?category=0` +
+    `&formats=0` +
+    `&language=0` +
+    `&quality=0` +
+    `&rating=0` +
+    `&section=0` +
+    `&year=0` +
+    `&page=${currentPage}`;
+
+  const html =
+    await fetchHtml(url);
+
+  return parseMediaCards(
+    html
+  );
 }
 
-export async function getSeries(page = 1): Promise<MediaItem[]> {
-  const html = await fetchHtml(`${PRIMARY_BASE_URL}/series?page=${Math.max(1, page)}`);
-  return parseMediaCards(html);
+/* =========================================================
+   SEARCH
+========================================================= */
+
+export async function search(
+  keyword: string,
+  page = 1
+): Promise<MediaItem[]> {
+  const query =
+    String(keyword || '').trim();
+
+  if (!query) {
+    return [];
+  }
+
+  const currentPage =
+    Math.max(
+      1,
+      Number.isFinite(page)
+        ? page
+        : 1
+    );
+
+  /*
+   * تجربة المسار الأساسي للبحث.
+   */
+  const url =
+    `${PRIMARY_BASE_URL}/search` +
+    `?q=${encodeURIComponent(query)}` +
+    `&page=${currentPage}`;
+
+  const html =
+    await fetchHtml(url);
+
+  return parseMediaCards(
+    html
+  );
 }
 
-export async function getSeriesEpisodes(seriesUrl: string): Promise<MediaItem[]> {
-  const target = normalizeUrl(seriesUrl);
-  const html = await fetchHtml(target);
-  const $ = cheerio.load(html);
+/* =========================================================
+   SERIES EPISODES
+========================================================= */
+
+export async function getSeriesEpisodes(
+  seriesUrl: string
+): Promise<MediaItem[]> {
+  const target =
+    normalizeUrl(seriesUrl);
+
+  if (!target) {
+    return [];
+  }
+
+  const html =
+    await fetchHtml(target);
+
+  const $ =
+    cheerio.load(html);
 
   const episodes: MediaItem[] = [];
   const seen = new Set<string>();
 
-  $('a[href*="/episode/"]').each((_, element) => {
-    const anchor = $(element);
-    let url = anchor.attr('href') || '';
-    if (!url) return;
+  $('a[href]').each(
+    (_, element) => {
+      const anchor =
+        $(element);
 
-    url = normalizeUrl(url);
-    if (seen.has(url)) return;
+      let url =
+        anchor.attr('href') ||
+        '';
 
-    let title = anchor.text().replace(/\s+/g, ' ').trim();
-    if (!title) {
-      title = anchor.parent().text().replace(/\s+/g, ' ').trim();
+      if (!url) {
+        return;
+      }
+
+      url =
+        normalizeUrl(url);
+
+      if (
+        !url ||
+        !url.toLowerCase().includes(
+          '/episode/'
+        )
+      ) {
+        return;
+      }
+
+      if (seen.has(url)) {
+        return;
+      }
+
+      let title =
+        cleanText(
+          anchor.attr('title') ||
+          anchor.text()
+        );
+
+      if (!title) {
+        title =
+          cleanText(
+            anchor
+              .parent()
+              .text()
+          );
+      }
+
+      if (!title) {
+        return;
+      }
+
+      seen.add(url);
+
+      const parent =
+        anchor.parent();
+
+      const image =
+        extractImage(
+          $,
+          parent
+        );
+
+      episodes.push({
+        title,
+        url,
+        image,
+        type: 'episode',
+      });
     }
-
-    if (!title) return;
-    seen.add(url);
-
-    episodes.push({
-      title,
-      url,
-      image: '',
-      type: 'episode',
-    });
-  });
+  );
 
   return episodes;
 }
 
-function isVideoUrl(url: string): boolean {
-  if (!url || typeof url !== 'string') return false;
-  const value = url.toLowerCase();
+/* =========================================================
+   VIDEO URL HELPERS
+========================================================= */
 
-  // Exclude image assets
+function isVideoUrl(
+  url: string
+): boolean {
   if (
-    value.includes('img.downet.net') ||
+    !url ||
+    typeof url !== 'string'
+  ) {
+    return false;
+  }
+
+  const value =
+    url.toLowerCase();
+
+  /*
+   * الصور ليست فيديو.
+   */
+  if (
+    value.includes(
+      'img.downet.net'
+    ) ||
     value.endsWith('.jpg') ||
     value.endsWith('.jpeg') ||
     value.endsWith('.png') ||
     value.endsWith('.webp') ||
-    value.endsWith('.svg')
+    value.endsWith('.svg') ||
+    value.endsWith('.gif')
   ) {
     return false;
   }
@@ -363,38 +866,131 @@ function isVideoUrl(url: string): boolean {
     value.includes('.m3u8') ||
     value.includes('.webm') ||
     value.includes('.mkv') ||
-    value.includes('downet.net/download/')
+    value.includes(
+      'downet.net/download/'
+    )
   );
 }
 
-function cleanVideoUrl(value: string): string {
-  let url = value.trim();
+/* =========================================================
+   CLEAN VIDEO URL
+========================================================= */
 
-  if (url.startsWith('intent:')) {
-    url = url.replace(/^intent:\/\//i, '').split('#Intent;')[0];
+function cleanVideoUrl(
+  value: string
+): string {
+  let url =
+    String(value || '').trim();
+
+  if (!url) {
+    return '';
   }
 
-  url = url
-    .replace(/^https?:\/\/ak\.svvlc:\/\//i, '')
-    .replace(/^https?:\/\/akwam[^/]+vlc:\/\//i, '')
-    .replace(/^vlc:\/\//i, '');
+  /*
+   * intent://
+   */
+  if (
+    url.startsWith(
+      'intent:'
+    )
+  ) {
+    url =
+      url
+        .replace(
+          /^intent:\/\//i,
+          ''
+        )
+        .split(
+          '#Intent;'
+        )[0];
+  }
 
-  return url.trim();
+  /*
+   * أخطاء الروابط القديمة مثل:
+   *
+   * https://ak.svvlc://https://...
+   */
+  url =
+    url
+      .replace(
+        /^https?:\/\/ak\.svvlc:\/\//i,
+        ''
+      )
+      .replace(
+        /^https?:\/\/akwam[^/]+vlc:\/\//i,
+        ''
+      )
+      .replace(
+        /^vlc:\/\//i,
+        ''
+      )
+      .trim();
+
+  /*
+   * بعض المصادر قد تعطي //cdn...
+   */
+  if (
+    url.startsWith('//')
+  ) {
+    url =
+      `https:${url}`;
+  }
+
+  return url;
 }
 
-function qualityFromUrl(url: string): string {
-  const lower = url.toLowerCase();
-  if (lower.includes('2160') || lower.includes('4k')) return '4K';
-  const match = lower.match(/(1080|720|480|360)p?/);
-  if (match) return `${match[1]}p`;
+/* =========================================================
+   QUALITY
+========================================================= */
+
+function qualityFromUrl(
+  url: string
+): string {
+  const lower =
+    url.toLowerCase();
+
+  if (
+    lower.includes('2160') ||
+    lower.includes('4k')
+  ) {
+    return '4K';
+  }
+
+  const match =
+    lower.match(
+      /(1080|720|480|360)p?/
+    );
+
+  if (match) {
+    return `${match[1]}p`;
+  }
+
   return 'HD';
 }
 
-function qualityRank(quality: string): number {
-  if (quality === '4K' || quality.includes('2160')) return 2160;
-  const match = quality.match(/(\d+)/);
-  return match ? Number(match[1]) : 0;
+function qualityRank(
+  quality: string
+): number {
+  if (
+    quality === '4K' ||
+    quality.includes('2160')
+  ) {
+    return 2160;
+  }
+
+  const match =
+    quality.match(
+      /(\d+)/
+    );
+
+  return match
+    ? Number(match[1])
+    : 0;
 }
+
+/* =========================================================
+   ADD VIDEO LINK
+========================================================= */
 
 function addVideoLink(
   links: VideoLink[],
@@ -402,219 +998,736 @@ function addVideoLink(
   rawUrl: string,
   quality = ''
 ) {
-  const cleaned = cleanVideoUrl(rawUrl);
-  if (!cleaned || !isVideoUrl(cleaned)) return;
-  if (!/^https?:\/\//i.test(cleaned)) return;
+  const cleaned =
+    cleanVideoUrl(rawUrl);
 
-  if (seen.has(cleaned)) return;
+  if (
+    !cleaned ||
+    !isVideoUrl(cleaned)
+  ) {
+    return;
+  }
+
+  if (
+    !/^https?:\/\//i.test(
+      cleaned
+    )
+  ) {
+    return;
+  }
+
+  if (
+    seen.has(cleaned)
+  ) {
+    return;
+  }
+
   seen.add(cleaned);
 
-  const lower = cleaned.toLowerCase();
-  const rawQ = quality.replace(/\s+/g, ' ').trim();
-  const digitMatch = rawQ.match(/\d+/);
-  const finalQuality = rawQ
-    ? digitMatch
-      ? `${digitMatch[0]}p`
-      : rawQ
-    : qualityFromUrl(cleaned);
+  const lower =
+    cleaned.toLowerCase();
+
+  const rawQuality =
+    cleanText(quality);
+
+  const digitMatch =
+    rawQuality.match(
+      /\d+/
+    );
+
+  const finalQuality =
+    rawQuality
+      ? digitMatch
+        ? `${digitMatch[0]}p`
+        : rawQuality
+      : qualityFromUrl(
+          cleaned
+        );
 
   links.push({
     url: cleaned,
-    quality: finalQuality,
-    isM3u8: lower.includes('.m3u8'),
+    quality:
+      finalQuality,
+    isM3u8:
+      lower.includes(
+        '.m3u8'
+      ),
   });
 }
 
-export async function getCleanLink(pageUrl: string): Promise<VideoLink[]> {
-  const target = normalizeUrl(pageUrl);
+/* =========================================================
+   GET CLEAN VIDEO LINKS
+========================================================= */
 
-  const cached = cacheGet(linkCache, target);
-  if (cached && cached.length > 0) {
+export async function getCleanLink(
+  pageUrl: string
+): Promise<VideoLink[]> {
+  const target =
+    normalizeUrl(pageUrl);
+
+  if (!target) {
+    return [];
+  }
+
+  const cached =
+    cacheGet(
+      linkCache,
+      target
+    );
+
+  if (
+    cached &&
+    cached.length > 0
+  ) {
     return cached;
   }
 
-  const html = await fetchHtml(target, 25000);
-  const $ = cheerio.load(html);
-
-  const links: VideoLink[] = [];
-  const seen = new Set<string>();
-
-  // 1. Direct <video source="...">
-  $('video source, source').each((_, element) => {
-    const source = $(element);
-    const url = source.attr('src') || source.attr('data-src') || '';
-    const quality =
-      source.attr('data-quality') ||
-      source.attr('size') ||
-      source.attr('title') ||
-      '';
-    addVideoLink(links, seen, url, quality);
-  });
-
-  // 2. Direct anchor links pointing to videos
-  $('a[href]').each((_, element) => {
-    const anchor = $(element);
-    const href = anchor.attr('href') || '';
-    if (!isVideoUrl(href)) return;
-    const text = anchor.text().replace(/\s+/g, ' ').trim();
-    addVideoLink(links, seen, href, text);
-  });
-
-  // 3. Sub watch & download pages
-  if (links.length === 0) {
-    const targets: { url: string; label: string }[] = [];
-    const seenUrls = new Set<string>();
-
-    $('a[href*="/watch/"], a[href*="/download/"]').each((_, element) => {
-      let href = $(element).attr('href') || '';
-      if (!href) return;
-      href = normalizeUrl(href);
-      if (!seenUrls.has(href)) {
-        seenUrls.add(href);
-        const text = $(element).text().replace(/\s+/g, ' ').trim();
-        const parentCard = $(element).closest('.download-item, .col-lg-auto, tr, li, div');
-        const badge = parentCard.find('.badge, .quality, [class*="quality"]').text().trim();
-        targets.push({ url: href, label: badge || text || 'HD' });
-      }
-    });
-
-    const limitedTargets = targets.slice(0, 6);
-    const pages = await Promise.allSettled(
-      limitedTargets.map((t) => fetchHtml(t.url, 15000))
+  const html =
+    await fetchHtml(
+      target,
+      25000
     );
 
-    pages.forEach((result, idx) => {
-      if (result.status !== 'fulfilled') return;
-      const sub$ = cheerio.load(result.value);
-      const meta = limitedTargets[idx];
+  const $ =
+    cheerio.load(html);
 
-      sub$('video source, source').each((_, el) => {
-        const source = sub$(el);
-        const url = source.attr('src') || source.attr('data-src') || '';
-        const q = source.attr('data-quality') || source.attr('size') || meta.label;
-        addVideoLink(links, seen, url, q);
-      });
+  const links: VideoLink[] = [];
+  const seen =
+    new Set<string>();
 
-      sub$('a[href]').each((_, el) => {
-        const href = sub$(el).attr('href') || '';
-        if (!isVideoUrl(href)) return;
-        addVideoLink(links, seen, href, meta.label || sub$(el).text().trim());
-      });
-    });
+  /* ---------------------------------------------------------
+     1. video/source
+  --------------------------------------------------------- */
+
+  $(
+    'video source, video[src], source'
+  ).each(
+    (_, element) => {
+      const source =
+        $(element);
+
+      const url =
+        source.attr('src') ||
+        source.attr('data-src') ||
+        source.attr('data-url') ||
+        '';
+
+      const quality =
+        source.attr(
+          'data-quality'
+        ) ||
+        source.attr('size') ||
+        source.attr('title') ||
+        '';
+
+      addVideoLink(
+        links,
+        seen,
+        url,
+        quality
+      );
+    }
+  );
+
+  /* ---------------------------------------------------------
+     2. روابط الفيديو المباشرة
+  --------------------------------------------------------- */
+
+  $('a[href]').each(
+    (_, element) => {
+      const anchor =
+        $(element);
+
+      const href =
+        anchor.attr('href') ||
+        '';
+
+      if (
+        !isVideoUrl(href)
+      ) {
+        return;
+      }
+
+      const text =
+        cleanText(
+          anchor.text()
+        );
+
+      addVideoLink(
+        links,
+        seen,
+        href,
+        text
+      );
+    }
+  );
+
+  /* ---------------------------------------------------------
+     3. صفحات watch/download
+  --------------------------------------------------------- */
+
+  if (
+    links.length === 0
+  ) {
+    const targets: {
+      url: string;
+      label: string;
+    }[] = [];
+
+    const seenUrls =
+      new Set<string>();
+
+    $(
+      'a[href*="/watch/"],' +
+        'a[href*="/download/"]'
+    ).each(
+      (_, element) => {
+        const anchor =
+          $(element);
+
+        let href =
+          anchor.attr(
+            'href'
+          ) || '';
+
+        if (!href) {
+          return;
+        }
+
+        href =
+          normalizeUrl(
+            href
+          );
+
+        if (
+          !href ||
+          seenUrls.has(
+            href
+          )
+        ) {
+          return;
+        }
+
+        seenUrls.add(
+          href
+        );
+
+        const text =
+          cleanText(
+            anchor.text()
+          );
+
+        const parentCard =
+          anchor.closest(
+            '.download-item,' +
+              '.col-lg-auto,' +
+              'tr,' +
+              'li,' +
+              'div'
+          );
+
+        const badge =
+          cleanText(
+            parentCard
+              .find(
+                '.badge,' +
+                  '.quality,' +
+                  '[class*="quality"]'
+              )
+              .first()
+              .text()
+          );
+
+        targets.push({
+          url: href,
+          label:
+            badge ||
+            text ||
+            'HD',
+        });
+      }
+    );
+
+    /*
+     * لا نرسل عددًا كبيرًا من الطلبات.
+     */
+    const limitedTargets =
+      targets.slice(
+        0,
+        6
+      );
+
+    const pages =
+      await Promise.allSettled(
+        limitedTargets.map(
+          (item) =>
+            fetchHtml(
+              item.url,
+              15000
+            )
+        )
+      );
+
+    pages.forEach(
+      (result, index) => {
+        if (
+          result.status !==
+          'fulfilled'
+        ) {
+          return;
+        }
+
+        const sub$ =
+          cheerio.load(
+            result.value
+          );
+
+        const meta =
+          limitedTargets[
+            index
+          ];
+
+        /*
+         * video/source
+         */
+        sub$(
+          'video source,' +
+            'video[src],' +
+            'source'
+        ).each(
+          (_, element) => {
+            const source =
+              sub$(element);
+
+            const url =
+              source.attr(
+                'src'
+              ) ||
+              source.attr(
+                'data-src'
+              ) ||
+              source.attr(
+                'data-url'
+              ) ||
+              '';
+
+            const quality =
+              source.attr(
+                'data-quality'
+              ) ||
+              source.attr(
+                'size'
+              ) ||
+              meta.label;
+
+            addVideoLink(
+              links,
+              seen,
+              url,
+              quality
+            );
+          }
+        );
+
+        /*
+         * روابط مباشرة
+         */
+        sub$(
+          'a[href]'
+        ).each(
+          (_, element) => {
+            const anchor =
+              sub$(element);
+
+            const href =
+              anchor.attr(
+                'href'
+              ) || '';
+
+            if (
+              !isVideoUrl(
+                href
+              )
+            ) {
+              return;
+            }
+
+            addVideoLink(
+              links,
+              seen,
+              href,
+              meta.label ||
+                cleanText(
+                  anchor.text()
+                )
+            );
+          }
+        );
+      }
+    );
   }
 
-  links.sort((a, b) => qualityRank(b.quality) - qualityRank(a.quality));
+  /*
+   * ترتيب الجودة.
+   */
+  links.sort(
+    (a, b) =>
+      qualityRank(
+        b.quality
+      ) -
+      qualityRank(
+        a.quality
+      )
+  );
 
-  // Deduplicate and label mirrors cleanly
-  const finalLinks: VideoLink[] = [];
-  const qualityCount = new Map<string, number>();
+  /* ---------------------------------------------------------
+     Deduplicate quality mirrors
+  --------------------------------------------------------- */
 
-  for (const link of links) {
-    const baseQ = link.quality;
-    const count = (qualityCount.get(baseQ) || 0) + 1;
-    qualityCount.set(baseQ, count);
+  const finalLinks:
+    VideoLink[] = [];
 
-    if (count === 1) {
-      finalLinks.push(link);
-    } else if (count === 2) {
+  const qualityCount =
+    new Map<
+      string,
+      number
+    >();
+
+  for (
+    const link of links
+  ) {
+    const baseQuality =
+      link.quality;
+
+    const count =
+      (qualityCount.get(
+        baseQuality
+      ) || 0) + 1;
+
+    qualityCount.set(
+      baseQuality,
+      count
+    );
+
+    if (
+      count === 1
+    ) {
+      finalLinks.push(
+        link
+      );
+    } else if (
+      count === 2
+    ) {
       finalLinks.push({
         ...link,
-        quality: `${baseQ} (سيرفر 2)`,
+        quality:
+          `${baseQuality} (سيرفر 2)`,
       });
     }
   }
 
-  if (finalLinks.length > 0) {
-    cacheSet(linkCache, target, finalLinks, LINK_CACHE_TTL);
+  if (
+    finalLinks.length > 0
+  ) {
+    cacheSet(
+      linkCache,
+      target,
+      finalLinks,
+      LINK_CACHE_TTL
+    );
   }
 
   return finalLinks;
 }
 
-export async function getDetails(pageUrl: string): Promise<MediaDetails> {
-  const target = normalizeUrl(pageUrl);
-  const html = await fetchHtml(target);
-  const $ = cheerio.load(html);
+/* =========================================================
+   DETAILS
+========================================================= */
 
-  const title =
-    $('h1').first().text().trim() ||
-    $('title').text().trim() ||
-    'بدون عنوان';
+export async function getDetails(
+  pageUrl: string
+): Promise<MediaDetails> {
+  const target =
+    normalizeUrl(pageUrl);
 
-  const image = normalizeUrl(
-    $('meta[property="og:image"]').attr('content') ||
-      $('img').first().attr('src') ||
-      ''
+  if (!target) {
+    throw new Error(
+      'رابط المحتوى غير صالح'
+    );
+  }
+
+  const html =
+    await fetchHtml(
+      target
+    );
+
+  const $ =
+    cheerio.load(html);
+
+  /* ---------------------------------------------------------
+     TITLE
+  --------------------------------------------------------- */
+
+  let title =
+    cleanText(
+      $('h1')
+        .first()
+        .text()
+    );
+
+  if (!title) {
+    title =
+      cleanText(
+        $('meta[property="og:title"]')
+          .attr('content') ||
+          ''
+      );
+  }
+
+  if (!title) {
+    title =
+      cleanText(
+        $('title')
+          .first()
+          .text()
+      );
+  }
+
+  if (!title) {
+    title =
+      'بدون عنوان';
+  }
+
+  /* ---------------------------------------------------------
+     IMAGE
+  --------------------------------------------------------- */
+
+  let image =
+    normalizeUrl(
+      $(
+        'meta[property="og:image"]'
+      ).attr(
+        'content'
+      ) || ''
+    );
+
+  if (!image) {
+    image =
+      extractImage(
+        $,
+        $('body')
+      );
+  }
+
+  /* ---------------------------------------------------------
+     STORY
+  --------------------------------------------------------- */
+
+  const story =
+    cleanText(
+      $(
+        '[class*="story"],' +
+          '[class*="description"],' +
+          '.description,' +
+          '.story,' +
+          'p.text-muted'
+      )
+        .first()
+        .text()
+    );
+
+  /* ---------------------------------------------------------
+     RATING
+  --------------------------------------------------------- */
+
+  let rating =
+    cleanText(
+      $(
+        '.rating,' +
+          '[class*="rating"]'
+      )
+        .first()
+        .text()
+    );
+
+  rating =
+    rating
+      .replace(
+        /[^0-9.]/g,
+        ''
+      );
+
+  /* ---------------------------------------------------------
+     DURATION
+  --------------------------------------------------------- */
+
+  const duration =
+    cleanText(
+      $(
+        '[class*="duration"],' +
+          '.duration'
+      )
+        .first()
+        .text()
+    );
+
+  /* ---------------------------------------------------------
+     QUALITY
+  --------------------------------------------------------- */
+
+  let quality =
+    cleanText(
+      $(
+        '.quality,' +
+          '[class*="quality"],' +
+          '.badge'
+      )
+        .first()
+        .text()
+    );
+
+  if (!quality) {
+    quality =
+      extractQuality(
+        cleanText(
+          $('body').text()
+        )
+      ) || '';
+  }
+
+  /* ---------------------------------------------------------
+     YEAR
+  --------------------------------------------------------- */
+
+  let year =
+    cleanText(
+      $(
+        '.year,' +
+          '[class*="year"],' +
+          '.badge-secondary'
+      )
+        .first()
+        .text()
+    );
+
+  if (!year) {
+    year =
+      extractYear(
+        cleanText(
+          $('body').text()
+        )
+      ) || '';
+  }
+
+  /* ---------------------------------------------------------
+     GENRES
+  --------------------------------------------------------- */
+
+  const genres:
+    string[] = [];
+
+  $(
+    '.genre,' +
+      '.genres a,' +
+      '[class*="genre"] a'
+  ).each(
+    (_, element) => {
+      const genre =
+        cleanText(
+          $(element).text()
+        );
+
+      if (
+        genre &&
+        !genres.includes(
+          genre
+        )
+      ) {
+        genres.push(
+          genre
+        );
+      }
+    }
   );
 
-  const story = $(
-    '[class*="story"], [class*="description"], .description, p.text-muted'
-  )
-    .first()
-    .text()
-    .replace(/\s+/g, ' ')
-    .trim();
+  /* ---------------------------------------------------------
+     SUBTITLES
+  --------------------------------------------------------- */
 
-  const rating = $('.rating, [class*="rating"]')
-    .first()
-    .text()
-    .replace(/[^0-9.]/g, '')
-    .trim();
+  const subtitles:
+    SubtitleTrack[] = [];
 
-  const duration = $('[class*="duration"]')
-    .first()
-    .text()
-    .replace(/\s+/g, ' ')
-    .trim();
+  $('track').each(
+    (_, element) => {
+      const track =
+        $(element);
 
-  const quality = $('.quality, [class*="quality"], .badge')
-    .first()
-    .text()
-    .replace(/\s+/g, ' ')
-    .trim();
+      const src =
+        normalizeUrl(
+          track.attr(
+            'src'
+          ) || ''
+        );
 
-  const year = $('.year, [class*="year"]')
-    .first()
-    .text()
-    .replace(/\s+/g, ' ')
-    .trim();
+      if (!src) {
+        return;
+      }
 
-  const genres: string[] = [];
-  $('.genre, .genres a, [class*="genre"] a').each((_, element) => {
-    const genre = $(element).text().replace(/\s+/g, ' ').trim();
-    if (genre && !genres.includes(genre)) {
-      genres.push(genre);
+      subtitles.push({
+        label:
+          track.attr(
+            'label'
+          ) ||
+          'العربية',
+
+        lang:
+          track.attr(
+            'srclang'
+          ) ||
+          'ar',
+
+        src,
+      });
     }
-  });
+  );
 
-  const subtitles: SubtitleTrack[] = [];
-  $('track').each((_, element) => {
-    const track = $(element);
-    const src = normalizeUrl(track.attr('src') || '');
-    if (!src) return;
+  /* ---------------------------------------------------------
+     VIDEO LINKS
+  --------------------------------------------------------- */
 
-    subtitles.push({
-      label: track.attr('label') || 'العربية',
-      lang: track.attr('srclang') || 'ar',
-      src,
-    });
-  });
-
-  const links = await getCleanLink(target);
+  const links =
+    await getCleanLink(
+      target
+    );
 
   return {
     title,
     image,
-    story: story || undefined,
-    rating: rating || undefined,
-    quality: quality || undefined,
-    year: year || undefined,
-    duration: duration || undefined,
+
+    story:
+      story ||
+      undefined,
+
+    rating:
+      rating ||
+      undefined,
+
+    quality:
+      quality ||
+      undefined,
+
+    year:
+      year ||
+      undefined,
+
+    duration:
+      duration ||
+      undefined,
+
     genres,
+
     links,
+
     subtitles,
   };
 }
-
-
-
