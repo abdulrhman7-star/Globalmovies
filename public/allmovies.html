@@ -1,0 +1,795 @@
+
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>moviesio Pro — شاهد الأفلام والمسلسلات مجاناً بجودة عالية | 100,000+ عمل</title>
+<meta name="description" content="أفضل منصة مجانية لمشاهدة الأفلام والمسلسلات بجودة HD. أكثر من 100,000 فيلم ومسلسل مع ترجمة عربية وسيرفرات سريعة.">
+<meta name="theme-color" content="#070707">
+
+<!-- Canonical & DNS -->
+<link rel="canonical" href="https://moviesio.web.app/">
+<link rel="preconnect" href="https://api.themoviedb.org" crossorigin>
+<link rel="preconnect" href="https://image.tmdb.org" crossorigin>
+<link rel="dns-prefetch" href="https://vidsrcme.ru">
+<link rel="dns-prefetch" href="https://multiembed.mov">
+<link rel="dns-prefetch" href="https://2embed.cc">
+<link rel="dns-prefetch" href="https://embed.smashystream.com">
+<link rel="dns-prefetch" href="https://moviesapi.club">
+<link rel="dns-prefetch" href="https://vidlink.pro">
+
+<!-- Fonts -->
+<link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"></noscript>
+
+<style>
+/* ===== CRITICAL CSS ===== */
+:root{
+    --bg:#070707; --surface:#111; --surface2:#181818; --surface3:#222;
+    --text:#fff; --muted:#999; --red:#e50914; --gold:#ffd700;
+    --line:rgba(255,255,255,.09); --radius:12px; --transition:.25s;
+    --sidebar-w:300px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{scroll-behavior:smooth}
+body{min-height:100dvh;background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-serif;overflow-x:hidden;}
+button,input,select{font:inherit;touch-action:manipulation}
+button{cursor:pointer;border:none;background:none;color:inherit;-webkit-appearance:none}
+a{text-decoration:none;color:inherit}
+img{max-width:100%;height:auto;display:block}
+.container{width:min(1400px,calc(100% - 32px));margin:auto}
+
+/* ===== HEADER (تحسين للجوال) ===== */
+.site-header{position:sticky;top:0;z-index:1000;background:rgba(7,7,7,.95);backdrop-filter:blur(24px);border-bottom:1px solid var(--line);transition:transform .4s;}
+.nav{height:64px;display:flex;align-items:center;gap:10px;flex-wrap:nowrap;}
+.menu-toggle{background:transparent;border:1px solid var(--line);color:#fff;padding:8px 12px;border-radius:10px;font-size:18px;display:flex;align-items:center;gap:8px;transition:var(--transition);min-height:44px;min-width:44px;justify-content:center;}
+.menu-toggle:hover,.menu-toggle:active{background:var(--surface3);border-color:var(--red)}
+.brand{display:flex;align-items:center;gap:8px;font-size:20px;font-weight:900;white-space:nowrap;}
+.brand-icon{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;background:var(--red);font-size:16px;flex-shrink:0;}
+.brand span:last-child{color:var(--red)}
+.nav-links{display:flex;gap:8px;margin-right:auto;}
+.nav-links a{color:#aaa;font-size:12px;font-weight:700;padding:6px 10px;border-radius:8px;cursor:pointer;white-space:nowrap;}
+.nav-links a:hover,.nav-links a.active{color:#fff;background:var(--surface2)}
+.nav-actions{display:flex;gap:8px;align-items:center;}
+.nav-search{position:relative;width:200px;height:40px;display:flex;align-items:center;gap:8px;padding:0 12px;border:1px solid var(--line);border-radius:10px;background:var(--surface);transition:var(--transition)}
+.nav-search:focus-within{border-color:var(--red);box-shadow:0 0 0 3px rgba(229,9,20,.15)}
+.nav-search input{width:100%;border:0;outline:0;background:transparent;color:#fff;font-size:13px}
+.nav-search span{font-size:14px;}
+
+/* ===== SIDEBAR (القائمة الجانبية) ===== */
+.sidebar-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:1100;opacity:0;pointer-events:none;transition:opacity .3s;backdrop-filter:blur(4px);}
+.sidebar-overlay.active{opacity:1;pointer-events:auto}
+.sidebar{position:fixed;top:0;right:0;width:min(var(--sidebar-w),85vw);height:100dvh;background:var(--surface);border-left:1px solid var(--line);z-index:1200;padding:20px;overflow-y:auto;transform:translateX(100%);transition:transform .35s cubic-bezier(0.4,0,0.2,1);}
+.sidebar.active{transform:translateX(0)}
+.sidebar-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;padding-bottom:12px;border-bottom:1px solid var(--line)}
+.sidebar-title{font-size:18px;font-weight:800;display:flex;align-items:center;gap:8px}
+.close-btn{color:#aaa;font-size:22px;transition:.2s;width:44px;height:44px;border-radius:10px;display:grid;place-items:center;cursor:pointer;}
+.close-btn:hover{color:var(--red);background:rgba(229,9,20,.1);transform:rotate(90deg)}
+.genre-item{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-radius:12px;background:var(--surface2);color:#ddd;font-size:14px;font-weight:600;transition:var(--transition);cursor:pointer;margin-bottom:8px;border:1px solid transparent;min-height:52px}
+.genre-item:hover,.genre-item:active{background:var(--red);color:#fff;transform:translateX(-4px);border-color:var(--red);box-shadow:0 4px 15px rgba(229,9,20,.25)}
+
+/* ===== HERO ===== */
+.hero{position:relative;min-height:400px;display:flex;align-items:center;overflow:hidden;}
+.hero-bg{position:absolute;inset:0;z-index:0;}
+.hero-bg::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,#070707 0%,rgba(7,7,7,.92) 35%,rgba(7,7,7,.5) 70%,rgba(7,7,7,.8) 100%)}
+.hero-bg img{width:100%;height:100%;object-fit:cover;opacity:.5;}
+.hero-content{position:relative;z-index:2;padding:40px 0;max-width:620px}
+.hero h1{font-size:clamp(28px,5vw,48px);line-height:1.1;margin-bottom:16px;font-weight:900}
+.hero h1 span{color:var(--red);}
+.hero p{color:#bbb;font-size:15px;line-height:1.7;margin-bottom:20px;}
+.hero-btns{display:flex;gap:10px;flex-wrap:wrap}
+
+/* ===== GENRE PILLS (شريط التصنيفات الأفقي) ===== */
+.genre-pills-wrap{margin:16px 0 8px;overflow-x:auto;display:flex;gap:8px;padding:4px 0 12px;scrollbar-width:none;-webkit-overflow-scrolling:touch;flex-wrap:nowrap;}
+.genre-pills-wrap::-webkit-scrollbar{display:none}
+.genre-pill{background:var(--surface2);border:1px solid var(--line);padding:8px 16px;border-radius:20px;font-size:12px;font-weight:700;color:#ccc;white-space:nowrap;cursor:pointer;transition:var(--transition);flex-shrink:0;min-height:40px;display:flex;align-items:center;}
+.genre-pill:hover,.genre-pill.active{background:var(--red);color:#fff;border-color:var(--red);}
+
+/* ===== FILTERS & GRID ===== */
+.filter-wrapper{background:var(--surface2);border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin:16px 0;}
+.filter-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px}
+.filter-group{display:flex;flex-direction:column;gap:4px}
+.filter-group label{font-size:10px;color:var(--muted);font-weight:700;letter-spacing:.3px}
+.filter-control{width:100%;padding:10px 12px;background:var(--surface);border:1px solid var(--line);border-radius:10px;color:#fff;font-size:12px;outline:none;min-height:44px;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:left 12px center;padding-left:32px;}
+.filter-actions{display:flex;gap:8px;margin-top:12px;justify-content:flex-end;flex-wrap:wrap;}
+
+.section{padding:24px 0 8px}
+.section-heading h2{font-size:20px;font-weight:800;margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+.home-row-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:12px}
+.movie-card{border-radius:12px;background:#121212;border:1px solid rgba(255,255,255,.06);cursor:pointer;transition:transform .3s;overflow:hidden;display:flex;flex-direction:column;}
+.movie-card:hover{transform:translateY(-4px);border-color:var(--red);}
+.movie-card .poster-wrap{aspect-ratio:2/3;overflow:hidden;background:#1a1a1a;}
+.movie-card img{width:100%;height:100%;object-fit:cover;transition:transform .5s;}
+.movie-card:hover img{transform:scale(1.06)}
+.movie-card .info{padding:10px;background:linear-gradient(transparent,#121212 20%);flex-grow:1;display:flex;flex-direction:column;justify-content:flex-end;}
+.movie-card h3{font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:700}
+.movie-card .meta{display:flex;gap:6px;margin-top:6px;font-size:10px;color:#888;flex-wrap:wrap;align-items:center;}
+.type-badge{background:var(--surface3);padding:2px 6px;border-radius:4px;color:#fff;font-size:8px;font-weight:700;}
+.rating-badge{color:var(--gold);font-weight:700;}
+
+/* ===== DETAIL PANEL ===== */
+.detail-panel{display:none;margin-top:20px;padding:20px;border:1px solid var(--line);border-radius:16px;background:linear-gradient(145deg,#171717,#0d0d0d);}
+.detail-panel.active{display:block;animation:reveal .4s;}
+@keyframes reveal{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+.detail-content{display:grid;grid-template-columns:160px 1fr;gap:20px}
+.detail-poster{width:160px;aspect-ratio:2/3;object-fit:cover;border-radius:12px;box-shadow:0 15px 40px rgba(0,0,0,.6);}
+.detail-title{font-size:26px;margin-bottom:10px;font-weight:900;line-height:1.2}
+.detail-meta-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:center}
+.detail-badge{background:var(--surface3);padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700;border:1px solid var(--line);white-space:nowrap}
+.detail-badge.red{color:var(--red);border-color:var(--red)}
+.detail-badge.gold{color:var(--gold);border-color:rgba(255,215,0,.3)}
+.detail-overview{color:#bbb;font-size:13px;line-height:1.8;margin-bottom:14px;max-height:100px;overflow-y:auto;}
+.cast-container{margin:12px 0;display:flex;gap:6px;flex-wrap:wrap;font-size:11px;color:#ccc;align-items:center;}
+.cast-item{background:var(--surface2);border:1px solid var(--line);padding:3px 10px;border-radius:15px;font-weight:600;}
+.detail-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+
+.tv-controls{display:none;margin-top:16px;padding:14px;border:1px solid var(--line);border-radius:12px;background:#0f0f0f}
+.tv-controls.active{display:block;}
+.episodes{display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:8px;margin-top:8px;max-height:180px;overflow-y:auto;}
+.episode{padding:8px 6px;text-align:center;border:1px solid var(--line);border-radius:8px;background:var(--surface2);color:#ccc;font-size:11px;cursor:pointer;transition:var(--transition);min-height:38px;display:flex;align-items:center;justify-content:center;}
+.episode:hover{background:var(--surface3);}
+.episode.active{background:var(--red);color:#fff;border-color:var(--red);}
+
+/* ===== PLAYER ===== */
+.player-section{display:none;margin:20px 0 30px;border:1px solid var(--line);border-radius:16px;overflow:hidden;background:#000;transition:all 0.3s ease;}
+.player-section.active{display:block;}
+.player-header{padding:10px 16px;background:var(--surface);display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line);flex-wrap:wrap;gap:8px;}
+.player-header h3{font-size:13px;color:#fff;font-weight:800;flex:1;min-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.player-container{position:relative;width:100%;aspect-ratio:16/9;background:#000;}
+.player-container iframe{position:absolute;inset:0;width:100%;height:100%;border:0;}
+.player-loader{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#000;z-index:10;transition:opacity .4s;}
+.player-loader.hidden{opacity:0;pointer-events:none;}
+.spinner{width:36px;height:36px;border:3px solid #333;border-top-color:var(--red);border-radius:50%;animation:spin 1s linear infinite;margin-bottom:12px;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ===== FLOATING PiP ===== */
+.player-section.floating-pip {
+    position: fixed;
+    bottom: 16px;
+    right: 16px;
+    width: 320px;
+    margin: 0;
+    z-index: 9999;
+    border-radius: 14px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.95);
+    border: 2px solid var(--red);
+    animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+@keyframes popIn {
+    0% { transform: scale(0.8); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+}
+.player-section.floating-pip .player-header h3 { display: none; }
+.player-section.floating-pip .player-header { padding: 6px 10px; }
+.player-section.floating-pip .player-header-controls .btn { padding: 4px 8px; font-size: 10px; min-height: 32px; }
+
+/* ===== TRAILER MODAL ===== */
+.trailer-modal{position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:9999;display:none;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(5px);}
+.trailer-modal.active{display:flex;animation:reveal .3s;}
+.trailer-content{position:relative;width:100%;max-width:900px;aspect-ratio:16/9;background:#000;border-radius:12px;overflow:hidden;}
+.trailer-content iframe{width:100%;height:100%;border:none;}
+.close-trailer{position:absolute;top:-36px;right:0;background:var(--red);color:#fff;width:32px;height:32px;border-radius:50%;font-size:16px;display:grid;place-items:center;cursor:pointer;border:none;}
+
+/* ===== BUTTONS & TOAST ===== */
+.btn{padding:10px 16px;border-radius:8px;font-weight:800;transition:.2s;display:inline-flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;min-height:44px;justify-content:center;border:none;}
+.btn.red{background:var(--red);color:#fff;}
+.btn.gold{background:var(--gold);color:#000;}
+.btn.outline{background:rgba(255,255,255,.06);border:1px solid var(--line);color:#fff;}
+.btn:hover{transform:translateY(-2px);filter:brightness(1.1);}
+.btn-sm{padding:6px 12px;font-size:11px;min-height:36px;}
+
+.toast-container{position:fixed;top:76px;left:16px;z-index:9999;display:flex;flex-direction:column;gap:8px;pointer-events:none;max-width:90%;}
+.toast{pointer-events:auto;background:var(--surface2);border:1px solid var(--line);border-right:4px solid var(--red);border-radius:12px;padding:12px 16px;display:flex;align-items:center;gap:10px;transform:translateX(-120%);transition:transform .4s;font-size:13px;font-weight:600;box-shadow:0 10px 30px rgba(0,0,0,.5);}
+.toast.show{transform:translateX(0)}
+
+/* ===== RESPONSIVE (تحسينات الجوال) ===== */
+@media (max-width:1200px){.home-row-grid{grid-template-columns:repeat(6,minmax(0,1fr))}}
+@media (max-width:1000px){.home-row-grid{grid-template-columns:repeat(5,minmax(0,1fr))}}
+@media (max-width:850px){
+    .container{width:min(100% - 16px,720px)}
+    .nav{flex-wrap:wrap;height:auto;padding:8px 0;gap:6px;}
+    .menu-toggle{order:1;padding:6px 10px;font-size:16px;min-height:40px;min-width:40px;}
+    .brand{order:2;font-size:18px;margin-left:auto;}
+    .brand-icon{width:30px;height:30px;font-size:14px;}
+    .nav-links{order:4;width:100%;display:flex;gap:6px;margin-right:0;justify-content:flex-start;overflow-x:auto;padding:4px 0;}
+    .nav-links a{font-size:11px;padding:4px 10px;min-height:34px;}
+    .nav-actions{order:3;width:100%;margin-right:0;margin-top:4px;}
+    .nav-search{width:100%;height:40px;}
+    .hero{min-height:300px;}
+    .hero-content{padding:30px 0;}
+    .hero h1{font-size:clamp(24px,6vw,36px);}
+    .hero p{font-size:14px;}
+    .filter-grid{grid-template-columns:1fr 1fr;}
+    .home-row-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+    .detail-content{grid-template-columns:120px 1fr;gap:14px}
+    .detail-poster{width:120px;}
+    .detail-title{font-size:22px;}
+    .player-header h3{font-size:12px;max-width:100%;}
+    .player-header{flex-direction:column;align-items:stretch;}
+    .player-header-controls{display:flex;flex-wrap:wrap;justify-content:space-between;width:100%;gap:6px;}
+    .player-header-controls .btn{font-size:10px;padding:4px 8px;min-height:32px;}
+    .server-selector{font-size:11px;padding:6px 10px;min-height:32px;min-width:120px;}
+    .player-section.floating-pip { width: 240px; bottom: 12px; right: 12px; }
+    .genre-pill{font-size:11px;padding:6px 12px;min-height:34px;}
+}
+@media (max-width:600px){
+    .nav-links a{font-size:10px;padding:4px 8px;}
+    .filter-grid{grid-template-columns:1fr;gap:8px;}
+    .home-row-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+    .movie-card h3{font-size:11px;}
+    .detail-content{grid-template-columns:1fr;text-align:center;}
+    .detail-poster{margin:0 auto;width:120px;}
+    .detail-meta-row,.cast-container{justify-content:center;}
+    .detail-actions{justify-content:center;}
+    .detail-actions .btn{font-size:12px;padding:8px 14px;min-height:40px;}
+    .player-section.floating-pip { width: 200px; bottom: 8px; right: 8px; }
+    .player-section.floating-pip .player-header-controls .btn { font-size: 9px; padding: 2px 6px; min-height: 26px; }
+    .player-section.floating-pip .server-selector { font-size: 9px; padding: 4px 6px; min-height: 26px; min-width: 80px; }
+    .toast-container{top:68px;left:8px;max-width:95%;}
+    .toast{font-size:12px;padding:10px 14px;}
+}
+@media (max-width:380px){
+    .home-row-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+    .movie-card .info{padding:6px;}
+    .movie-card h3{font-size:10px;}
+    .brand{font-size:16px;}
+    .brand-icon{width:26px;height:26px;font-size:12px;}
+    .menu-toggle{font-size:14px;min-height:34px;min-width:34px;padding:4px 8px;}
+}
+</style>
+</head>
+<body>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- TRAILER MODAL -->
+<div id="trailerModal" class="trailer-modal">
+    <div class="trailer-content">
+        <button class="close-trailer" onclick="closeTrailer()">✕</button>
+        <iframe id="trailerIframe" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+    </div>
+</div>
+
+<!-- SIDEBAR (القائمة الجانبية) -->
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+<aside class="sidebar" id="sidebar" role="navigation">
+    <div class="sidebar-header">
+        <span class="sidebar-title">📁 التصنيفات</span>
+        <button class="close-btn" id="closeSidebarBtn" aria-label="إغلاق القائمة">✕</button>
+    </div>
+    <div class="genre-list" id="sidebarGenreList"></div>
+</aside>
+
+<!-- HEADER -->
+<header class="site-header" id="header">
+    <div class="container nav">
+        <button class="menu-toggle" id="openSidebarBtn" aria-label="فتح القائمة">
+            ☰
+        </button>
+        <a class="brand" href="/" onclick="event.preventDefault(); resetFilters();">
+            <span class="brand-icon">▶</span>movies<span>io</span>
+        </a>
+        <nav class="nav-links">
+            <a onclick="resetFilters()" class="active">الرئيسية</a>
+            <a onclick="filterByMediaType('movie')">أفلام</a>
+            <a onclick="filterByMediaType('tv')">مسلسلات</a>
+        </nav>
+        <div class="nav-actions">
+            <div class="nav-search">
+                <span>🔍</span>
+                <input id="navSearchInput" type="text" placeholder="ابحث...">
+            </div>
+        </div>
+    </div>
+</header>
+
+<main>
+    <!-- HERO -->
+    <section class="hero" id="heroSection">
+        <div class="hero-bg"><img src="https://images.unsplash.com/photo-1536440136628-849c177e76a1?q=80&w=1920&auto=format&fit=crop" id="heroBgImg"></div>
+        <div class="container hero-content">
+            <h1>عالم السينما <span>بدون حدود</span></h1>
+            <p>شاهد مسلسلاتك من حيث توقفت، مع تشغيل تلقائي للحلقات، بأقوى سيرفرات عالمية وبدون تقطيع.</p>
+            <div class="hero-btns">
+                <button class="btn red" onclick="document.getElementById('browseSection').scrollIntoView({behavior:'smooth'})">🎬 تصفح الأعمال</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- FILTERS & GRID -->
+    <section class="section container" id="browseSection">
+        <div class="section-heading">
+            <h2 id="browseTitle">🔎 التصفح والتصفية المتقدمة</h2>
+        </div>
+        
+        <!-- GENRE PILLS (شريط التصنيفات السريع) -->
+        <div class="genre-pills-wrap" id="genrePillsWrap"></div>
+
+        <div class="filter-wrapper" id="filterWrapper">
+            <div class="filter-grid">
+                <div class="filter-group">
+                    <label for="filterType">نوع المحتوى</label>
+                    <select id="filterType" class="filter-control">
+                        <option value="movie">🎬 أفلام</option>
+                        <option value="tv">📺 مسلسلات</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="filterGenre">التصنيف</label>
+                    <select id="filterGenre" class="filter-control"><option value="">جميع التصنيفات</option></select>
+                </div>
+                <div class="filter-group">
+                    <label for="filterYear">سنة الإنتاج</label>
+                    <select id="filterYear" class="filter-control">
+                        <option value="">جميع السنوات</option>
+                        <option value="2026">2026</option><option value="2025">2025</option><option value="2024">2024</option>
+                        <option value="2020s">عقد 2020</option><option value="2010s">عقد 2010</option>
+                        <option value="2000s">عقد 2000</option><option value="1990s">عقد 1990</option>
+                        <option value="classic">كلاسيكي (قبل 1990)</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="filterSort">الفرز والترتيب</label>
+                    <select id="filterSort" class="filter-control">
+                        <option value="popularity.desc">🔥 الأكثر شعبية</option>
+                        <option value="vote_average.desc">⭐ الأعلى تقييماً</option>
+                        <option value="primary_release_date.desc">🆕 الأحدث</option>
+                    </select>
+                </div>
+            </div>
+            <div class="filter-actions">
+                <button class="btn outline btn-sm" onclick="resetFilters()">🔄 إعادة ضبط</button>
+                <button class="btn red btn-sm" onclick="applyAdvancedFilters(1)">⚡ تطبيق</button>
+            </div>
+        </div>
+
+        <div id="browseResultsGrid"></div>
+    </section>
+
+    <!-- DETAIL PANEL -->
+    <div class="container">
+        <div class="detail-panel" id="detailPanel">
+            <div class="detail-content">
+                <img id="detailPoster" class="detail-poster" src="" alt="">
+                <div>
+                    <h2 id="detailTitle" class="detail-title">--</h2>
+                    <div class="detail-meta-row" id="detailMetaRow"></div>
+                    <div id="detailCast"></div>
+                    <div class="detail-overview" id="detailOverview"></div>
+                    
+                    <div id="tvControls" class="tv-controls">
+                        <h4>📺 المواسم والحلقات</h4>
+                        <select id="seasonSelect" class="filter-control" style="width:auto;min-width:140px;margin-bottom:8px;"></select>
+                        <div id="episodes" class="episodes"></div>
+                    </div>
+
+                    <div class="detail-actions">
+                        <button id="openPlayerBtn" class="btn red">▶ مشاهدة الآن</button>
+                        <button id="trailerBtn" class="btn gold" style="display:none;">🎬 الإعلان</button>
+                        <button id="closeDetailBtn" class="btn outline">✕ إغلاق</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PLAYER SECTION -->
+    <div class="container">
+        <section class="player-section" id="playerSection">
+            <div class="player-header">
+                <h3 id="playerTitle">مشغل moviesio Pro</h3>
+                <div class="player-header-controls" style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+                    <select id="serverSelect" class="filter-control" style="padding:4px 8px;min-height:32px;width:auto;font-size:11px;padding-left:24px;">
+                        <option value="vidsrc">🚀 سيرفر 1</option>
+                        <option value="multiembed">⚡ سيرفر 2</option>
+                        <option value="2embed">🎬 سيرفر 3</option>
+                        <option value="smashy">📡 سيرفر 4</option>
+                        <option value="moviesapi">🎞️ سيرفر 5</option>
+                        <option value="vidlink">🔥 سيرفر 6</option>
+                    </select>
+                    <button id="pipBtn" class="btn outline btn-sm" onclick="togglePiP()">🔲 مصغر</button>
+                    <button id="fullscreenBtn" class="btn outline btn-sm" onclick="toggleFullscreen()">⛶ كامل</button>
+                    <button class="btn outline btn-sm" onclick="closePlayer()">✕ إغلاق</button>
+                </div>
+            </div>
+            <div class="player-container" id="playerContainer">
+                <div id="playerLoader" class="player-loader">
+                    <div class="spinner"></div>
+                    <p style="color:#fff;font-size:13px;">جاري تجهيز الفيديو...</p>
+                </div>
+                <iframe id="moviePlayer" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>
+            </div>
+        </section>
+    </div>
+</main>
+
+<script>
+// ==================== CONFIG ====================
+const TMDB_ACCESS_TOKEN = 'eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJjNjBmMDc1Y2YzNmM2ZGZiMTM2YzNjMGFlNTY0ZDQ2MSIsIm5iZiI6MTc4NjkxNDAzNC4xMjgsInN1YiI6IjZhODIyNGYyMjYxNDgxNDlkZTc2OGM1MiIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.h-UBf7qsxc6caT3NTjZ4qBpeOqMhzndlqISR1W_79V8';
+const TMDB_BASE = 'https://api.themoviedb.org/3';
+const IMAGE_BASE = 'https://image.tmdb.org/t/p/w500';
+
+// ==================== GENRES LIST ====================
+const GENRES = [
+    {id:28,name:"أكشن (Action)"},{id:12,name:"مغامرة (Adventure)"},{id:16,name:"أنمي (Animation)"},
+    {id:35,name:"كوميدي (Comedy)"},{id:80,name:"جريمة (Crime)"},{id:99,name:"وثائقي (Documentary)"},
+    {id:18,name:"دراما (Drama)"},{id:10751,name:"عائلي (Family)"},{id:14,name:"فانتازيا (Fantasy)"},
+    {id:36,name:"تاريخي (History)"},{id:27,name:"رعب (Horror)"},{id:10402,name:"موسيقي (Music)"},
+    {id:9648,name:"غموض (Mystery)"},{id:10749,name:"رومانسي (Romance)"},{id:878,name:"خيال علمي (Sci-Fi)"},
+    {id:10770,name:"تلفزيوني (TV Movie)"},{id:53,name:"إثارة (Thriller)"},{id:10752,name:"حرب (War)"},{id:37,name:"غربي (Western)"}
+];
+
+let selectedMedia = null, selectedSeason = 1, selectedEpisode = 1;
+let isPiPMode = false;
+
+// ==================== TOAST ====================
+function showToast(message, type = 'success') {
+    const container = document.getElementById('toastContainer');
+    const toast = document.createElement('div');
+    toast.className = `toast show`;
+    if (type === 'success') toast.style.borderRightColor = '#22c55e';
+    else if (type === 'warning') toast.style.borderRightColor = '#ffd700';
+    else toast.style.borderRightColor = '#3b82f6';
+    toast.innerHTML = `<span>${message}</span>`;
+    container.appendChild(toast);
+    setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 400); }, 2800);
+}
+
+// ==================== INIT ====================
+document.addEventListener('DOMContentLoaded', () => {
+    initGenres();
+    applyAdvancedFilters(1);
+    setupSidebar();
+});
+
+async function fetchTMDB(endpoint) {
+    try {
+        const res = await fetch(`${TMDB_BASE}${endpoint}`, {
+            headers: { Authorization: `Bearer ${TMDB_ACCESS_TOKEN}`, accept: 'application/json' }
+        });
+        if (!res.ok) throw new Error('API Error');
+        return await res.json();
+    } catch (e) { return { results: [] }; }
+}
+
+// ==================== GENRES INIT ====================
+function initGenres() {
+    const sidebarContainer = document.getElementById('sidebarGenreList');
+    const filterSelect = document.getElementById('filterGenre');
+    const pillsWrap = document.getElementById('genrePillsWrap');
+    
+    sidebarContainer.innerHTML = '';
+    filterSelect.innerHTML = '<option value="">جميع التصنيفات</option>';
+    pillsWrap.innerHTML = '<div class="genre-pill active" data-id="" onclick="filterByGenre(this, \'\')">الكل</div>';
+
+    GENRES.forEach(g => {
+        // Sidebar
+        const item = document.createElement('div');
+        item.className = 'genre-item';
+        item.innerHTML = `<span>${g.name}</span>`;
+        item.onclick = () => { 
+            document.getElementById('filterGenre').value = g.id;
+            closeSidebar();
+            applyAdvancedFilters(1);
+            updatePills(g.id);
+        };
+        sidebarContainer.appendChild(item);
+
+        // Select
+        const opt = document.createElement('option');
+        opt.value = g.id;
+        opt.textContent = g.name;
+        filterSelect.appendChild(opt);
+
+        // Pills
+        const pill = document.createElement('div');
+        pill.className = 'genre-pill';
+        pill.dataset.id = g.id;
+        pill.textContent = g.name;
+        pill.onclick = () => { 
+            document.getElementById('filterGenre').value = g.id;
+            applyAdvancedFilters(1);
+            updatePills(g.id);
+        };
+        pillsWrap.appendChild(pill);
+    });
+}
+
+function updatePills(activeId) {
+    document.querySelectorAll('.genre-pill').forEach(p => {
+        p.classList.toggle('active', p.dataset.id == activeId);
+    });
+}
+
+function filterByGenre(el, id) {
+    document.getElementById('filterGenre').value = id;
+    applyAdvancedFilters(1);
+    updatePills(id);
+}
+
+// ==================== SIDEBAR ====================
+function setupSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+    document.getElementById('openSidebarBtn').onclick = () => {
+        sidebar.classList.add('active');
+        overlay.classList.add('active');
+    };
+    document.getElementById('closeSidebarBtn').onclick = closeSidebar;
+    overlay.onclick = closeSidebar;
+}
+function closeSidebar() {
+    document.getElementById('sidebar').classList.remove('active');
+    document.getElementById('sidebarOverlay').classList.remove('active');
+}
+
+// ==================== FILTERS ====================
+async function applyAdvancedFilters(page) {
+    const target = document.getElementById('browseResultsGrid');
+    target.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:30px;color:#aaa;">جاري التحميل...</div>`;
+    
+    const type = document.getElementById('filterType').value;
+    const genre = document.getElementById('filterGenre').value;
+    const yearVal = document.getElementById('filterYear').value;
+    const sort = document.getElementById('filterSort').value;
+
+    let params = [`language=ar-SA`, `sort_by=${sort}`, `page=${page}`, `include_adult=false`];
+    if (genre) params.push(`with_genres=${genre}`);
+    if (yearVal) {
+        if (yearVal === 'classic') params.push(`primary_release_date.lte=1989-12-31`);
+        else if (yearVal.includes('s')) {
+            const start = yearVal.replace('s', '');
+            params.push(`primary_release_date.gte=${start}-01-01&primary_release_date.lte=${parseInt(start)+9}-12-31`);
+        } else params.push(type === 'movie' ? `primary_release_year=${yearVal}` : `first_air_date_year=${yearVal}`);
+    }
+
+    const data = await fetchTMDB(`/discover/${type}?${params.join('&')}`);
+    if(data.results?.length) renderGrid('browseResultsGrid', data.results, type);
+    else target.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:30px;color:red;">لا توجد نتائج.</div>`;
+}
+
+function resetFilters() {
+    document.getElementById('filterType').value = 'movie';
+    document.getElementById('filterGenre').value = '';
+    document.getElementById('filterYear').value = '';
+    document.getElementById('filterSort').value = 'popularity.desc';
+    document.getElementById('navSearchInput').value = '';
+    updatePills('');
+    closeDetail();
+    applyAdvancedFilters(1);
+}
+
+function filterByMediaType(type) {
+    document.getElementById('filterType').value = type;
+    applyAdvancedFilters(1);
+    document.getElementById('browseSection').scrollIntoView({behavior:'smooth'});
+}
+
+// ==================== SEARCH ====================
+let searchTimeout;
+document.getElementById('navSearchInput').addEventListener('input', (e) => {
+    clearTimeout(searchTimeout);
+    const q = e.target.value.trim();
+    if(q.length === 0) { resetFilters(); return; }
+    if(q.length < 2) return;
+    searchTimeout = setTimeout(async () => {
+        document.getElementById('browseTitle').innerText = `🔍 نتائج البحث: "${q}"`;
+        const data = await fetchTMDB(`/search/multi?query=${encodeURIComponent(q)}&language=ar-SA`);
+        const filtered = (data.results || []).filter(i => i.media_type === 'movie' || i.media_type === 'tv');
+        renderGrid('browseResultsGrid', filtered, 'movie');
+    }, 400);
+});
+
+// ==================== GRID RENDERER ====================
+function renderGrid(targetId, list, defaultType) {
+    const target = document.getElementById(targetId);
+    if (!list?.length) {
+        target.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--muted)">لا توجد أعمال</div>`;
+        return;
+    }
+    target.innerHTML = `<div class="home-row-grid">${list.map(item => {
+        const type = item.media_type || defaultType || 'movie';
+        const title = item.title || item.name || 'بدون عنوان';
+        const poster = item.poster_path ? `${IMAGE_BASE}${item.poster_path}` : 'https://via.placeholder.com/300x450/181818/555?text=لا+صورة';
+        const year = (item.release_date || item.first_air_date || '').substring(0,4) || '-';
+        return `
+            <article class="movie-card" onclick="openMediaById(${item.id}, '${type}')">
+                <div class="poster-wrap"><img src="${poster}" loading="lazy" onerror="this.src='https://via.placeholder.com/300x450/181818/555?text=خطأ'"></div>
+                <div class="info">
+                    <h3>${title}</h3>
+                    <div class="meta">
+                        <span class="type-badge">${type === 'tv' ? 'مسلسل' : 'فيلم'}</span>
+                        <span class="rating-badge">★ ${Number(item.vote_average||0).toFixed(1)}</span>
+                    </div>
+                </div>
+            </article>`;
+    }).join('')}</div>`;
+}
+
+// ==================== OPEN MEDIA ====================
+async function openMediaById(id, type) {
+    if(isPiPMode) togglePiP();
+    document.getElementById('serverSelect').value = 'vidsrc';
+
+    const details = await fetchTMDB(`/${type}/${id}?language=ar-SA&append_to_response=external_ids,credits,videos`);
+    selectedMedia = { ...details, mediaType: type };
+
+    document.getElementById('detailPoster').src = details.poster_path ? `${IMAGE_BASE}${details.poster_path}` : '';
+    document.getElementById('detailTitle').textContent = details.title || details.name;
+
+    const year = (details.release_date || details.first_air_date || '').substring(0, 4);
+    document.getElementById('detailMetaRow').innerHTML = `
+        <span class="detail-badge red">${type === 'tv' ? '📺 مسلسل' : '🎬 فيلم'}</span>
+        <span class="detail-badge gold">⭐ ${Number(details.vote_average || 0).toFixed(1)}</span>
+        ${year ? `<span class="detail-badge">📅 ${year}</span>` : ''}
+    `;
+
+    const cast = (details.credits?.cast || []).slice(0, 5);
+    document.getElementById('detailCast').innerHTML = cast.length ? 
+        `<div class="cast-container"><strong>👥 الممثلون:</strong> ${cast.map(c => `<span class="cast-item">${c.name}</span>`).join('')}</div>` : '';
+
+    const trailer = (details.videos?.results || []).find(v => v.type === 'Trailer' && v.site === 'YouTube');
+    const trailerBtn = document.getElementById('trailerBtn');
+    if (trailer) { trailerBtn.style.display = 'inline-flex'; trailerBtn.onclick = () => openTrailer(trailer.key); } 
+    else { trailerBtn.style.display = 'none'; }
+
+    document.getElementById('detailOverview').textContent = details.overview || 'الملخص غير متوفر.';
+
+    const tvControls = document.getElementById('tvControls');
+    if (type === 'tv') {
+        tvControls.classList.add('active');
+        setupSeasons(details);
+    } else {
+        tvControls.classList.remove('active');
+        setTimeout(() => { playVideo('vidsrc', 0); }, 300);
+    }
+
+    document.getElementById('detailPanel').classList.add('active');
+    setTimeout(() => {
+        document.getElementById('playerSection').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 500);
+}
+
+// ==================== TRAILER ====================
+function openTrailer(key) {
+    document.getElementById('trailerIframe').src = `https://www.youtube.com/embed/${key}?autoplay=1`;
+    document.getElementById('trailerModal').classList.add('active');
+}
+function closeTrailer() {
+    document.getElementById('trailerModal').classList.remove('active');
+    document.getElementById('trailerIframe').src = '';
+}
+
+// ==================== TV SHOWS ====================
+function setupSeasons(show) {
+    const seasonSelect = document.getElementById('seasonSelect');
+    seasonSelect.innerHTML = '';
+    const seasons = (show.seasons || []).filter(s => s.season_number > 0);
+    seasons.forEach(s => {
+        const opt = document.createElement('option');
+        opt.value = s.season_number;
+        opt.textContent = `الموسم ${s.season_number}`;
+        seasonSelect.appendChild(opt);
+    });
+    seasonSelect.onchange = () => loadEpisodes(show.id, seasonSelect.value);
+    if(seasons.length) {
+        seasonSelect.value = seasons[0].season_number;
+        loadEpisodes(show.id, seasons[0].season_number);
+    }
+}
+async function loadEpisodes(showId, seasonNum) {
+    selectedSeason = seasonNum;
+    const container = document.getElementById('episodes');
+    container.innerHTML = '<div style="padding:10px;color:#aaa;">جاري التحميل...</div>';
+    const data = await fetchTMDB(`/tv/${showId}/season/${seasonNum}?language=ar-SA`);
+    selectedEpisode = 1;
+    container.innerHTML = (data.episodes || []).map(ep => `
+        <div class="episode ${ep.episode_number == 1 ? 'active' : ''}" onclick="selectEpisode(${ep.episode_number}, this)">حلقة ${ep.episode_number}</div>
+    `).join('');
+    setTimeout(() => { playVideo('vidsrc', 0); }, 300);
+}
+function selectEpisode(epNum, el) {
+    selectedEpisode = epNum;
+    document.querySelectorAll('.episode').forEach(e => e.classList.remove('active'));
+    el.classList.add('active');
+    if(!isPiPMode) document.getElementById('playerSection').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    playVideo(document.getElementById('serverSelect').value, 0);
+}
+
+// ==================== PLAYER ====================
+function playVideo(serverProvider, startAt = 0) {
+    if (!selectedMedia) return;
+    const playerSection = document.getElementById('playerSection');
+    const iframe = document.getElementById('moviePlayer');
+    const loader = document.getElementById('playerLoader');
+    
+    playerSection.classList.add('active');
+    loader.classList.remove('hidden');
+    iframe.src = 'about:blank';
+
+    const tmdbId = selectedMedia.id;
+    const type = selectedMedia.mediaType;
+    const imdbId = selectedMedia.external_ids?.imdb_id || tmdbId;
+    const s = type === 'tv' ? selectedSeason : 0;
+    const ep = type === 'tv' ? selectedEpisode : 0;
+
+    let url = "";
+    if (serverProvider === 'vidsrc') {
+        url = type === 'tv' 
+            ? `https://vidsrcme.ru/embed/tv?tmdb=${tmdbId}&season=${s}&episode=${ep}&ds_lang=ar&autonext=1&autoplay=1&mute=1` 
+            : `https://vidsrcme.ru/embed/movie?imdb=${imdbId}&ds_lang=ar&autoplay=1&mute=1`;
+    } else if (serverProvider === 'multiembed') {
+        url = type === 'tv' ? `https://multiembed.mov/?video_id=${tmdbId}&tmdb=1&s=${s}&e=${ep}&autoplay=1` : `https://multiembed.mov/?video_id=${tmdbId}&tmdb=1&autoplay=1`;
+    } else if (serverProvider === '2embed') {
+        url = type === 'tv' ? `https://www.2embed.cc/embedtv/${tmdbId}&s=${s}&e=${ep}` : `https://www.2embed.cc/embed/${imdbId}`;
+    } else if (serverProvider === 'smashy') {
+        url = type === 'tv' ? `https://embed.smashystream.com/playere.php?tmdb=${tmdbId}&season=${s}&episode=${ep}` : `https://embed.smashystream.com/playere.php?tmdb=${tmdbId}`;
+    } else if (serverProvider === 'moviesapi') {
+        url = type === 'tv' ? `https://moviesapi.club/tv/${tmdbId}-${s}-${ep}` : `https://moviesapi.club/movie/${tmdbId}`;
+    } else if (serverProvider === 'vidlink') {
+        url = type === 'tv' ? `https://vidlink.pro/tv/${tmdbId}/${s}/${ep}?primaryColor=e50914&autoplay=1` : `https://vidlink.pro/movie/${tmdbId}?primaryColor=e50914&autoplay=1`;
+    }
+
+    document.getElementById('playerTitle').textContent = type === 'tv'
+        ? `▶ ${selectedMedia.title || selectedMedia.name} - م${s} ح${ep}`
+        : `▶ ${selectedMedia.title || selectedMedia.name}`;
+
+    setTimeout(() => { iframe.src = url; iframe.onload = () => loader.classList.add('hidden'); }, 200);
+}
+
+// ===== EVENTS =====
+document.getElementById('serverSelect').addEventListener('change', (e) => {
+    playVideo(e.target.value, 0);
+    showToast('🔄 تم تغيير السيرفر', 'success');
+});
+document.getElementById('openPlayerBtn').onclick = () => {
+    if (!selectedMedia) return;
+    document.getElementById('playerSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    playVideo(document.getElementById('serverSelect').value, 0);
+};
+document.getElementById('closeDetailBtn').onclick = () => {
+    document.getElementById('detailPanel').classList.remove('active');
+    closePlayer();
+};
+function closeDetail() { document.getElementById('detailPanel').classList.remove('active'); closePlayer(); }
+
+// ==================== FULLSCREEN ====================
+function toggleFullscreen() {
+    const container = document.getElementById('playerContainer');
+    if (!document.fullscreenElement) container.requestFullscreen().catch(() => {});
+    else document.exitFullscreen();
+}
+document.addEventListener('fullscreenchange', () => {
+    document.getElementById('fullscreenBtn').innerHTML = document.fullscreenElement ? '⛶ خروج' : '⛶ كامل';
+});
+
+// ==================== PIP ====================
+function togglePiP() {
+    const playerSection = document.getElementById('playerSection');
+    const pipBtn = document.getElementById('pipBtn');
+    isPiPMode = !isPiPMode;
+    if (isPiPMode) {
+        playerSection.classList.add('floating-pip');
+        pipBtn.innerHTML = '🔳 تكبير';
+        showToast('🔲 تم تفعيل المشغل المصغر', 'info');
+    } else {
+        playerSection.classList.remove('floating-pip');
+        pipBtn.innerHTML = '🔲 مصغر';
+        playerSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+}
+
+function closePlayer() {
+    const playerSection = document.getElementById('playerSection');
+    playerSection.classList.remove('active', 'floating-pip');
+    document.getElementById('moviePlayer').src = 'about:blank';
+    isPiPMode = false;
+    document.getElementById('pipBtn').innerHTML = '🔲 مصغر';
+    if (document.fullscreenElement) document.exitFullscreen();
+    document.getElementById('fullscreenBtn').innerHTML = '⛶ كامل';
+}
+</script>
+</body>
+</html>
